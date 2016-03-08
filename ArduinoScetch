@@ -1,0 +1,116 @@
+/*
+Project for contol staff of firm, his time arrival on workplase.
+In project using Arduino UNO, Ethernet shield,MFRC 522 with magnetic card and work with MySQL.
+*/
+
+
+#include <MFRC522.h>
+#include <SPI.h>
+#include <string.h>
+#include <Ethernet.h>
+
+#define SS_PIN 6
+#define RST_PIN 7
+
+MFRC522 mfrc522(SS_PIN, RST_PIN); //об'єкт MFRC522
+MFRC522::MIFARE_Key key;
+
+byte code[4];
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+IPAddress ip(192,168,1,120);   
+
+int relay = 5;
+
+boolean incoming = 0;
+
+EthernetServer server(80);
+//Setting Serial connection , relay port, rfid initialization, Starting the server
+void setup(){
+        Serial.begin(9600);
+        SPI.begin(); //initialization SPI
+        mfrc522.PCD_Init(); //initialization rfid
+        for (byte i = 0; i < 6; i++) {
+          key.keyByte[i] = 0xFF;
+        }
+        
+        Ethernet.begin(mac,ip);
+        server.begin();
+        
+        pinMode(relay,OUTPUT);
+        digitalWrite(relay,HIGH);
+}
+
+void loop(){
+
+//Waiting and reading rfid card
+
+  if ( ! mfrc522.PICC_IsNewCardPresent()) {
+		return;
+	}
+
+	
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
+		return;
+	}
+  
+  
+//Waiting for client connection and reading bytes from client
+
+  EthernetClient client = server.available();
+  if (client) {
+     boolean currentLineIsBlank = true;
+     while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        
+        
+//Enabling relay upon receipt of the client '/ $ 1' to the url tape
+
+        if(incoming && c == ' '){
+          incoming = 0;
+        }
+        if(c == '$'){
+          incoming = 1;
+        }
+        
+        if(incoming == 1){
+         if(c != '$'){
+          if(c == '1'){
+            digitalWrite(relay,LOW);
+            delay(1000);
+            digitalWrite(relay,HIGH);
+           
+          }
+         }
+        }
+        
+        
+//Issuance user id (UID) to page
+     if (c == '\n' && currentLineIsBlank) { 
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-Type: text/html");
+          client.println("Connection: close");  
+	  client.println("Refresh: 0.5");  
+          client.println();
+          client.println("<!DOCTYPE HTML>");
+          client.println("<html>");  
+          
+          for (byte i = 0; i < mfrc522.uid.size; i++){
+             client.print(mfrc522.uid.uidByte[i]< 0x10 ? "0" : "");
+             client.print(mfrc522.uid.uidByte[i], HEX);
+          } 
+          client.println("</html>");
+          break;
+        }
+        if (c == '\n') {
+          currentLineIsBlank = true;
+        } 
+        else if (c != '\r') {
+          currentLineIsBlank = false;
+        }
+      }
+     }
+    delay(1);
+    client.stop();
+  }
+}   
