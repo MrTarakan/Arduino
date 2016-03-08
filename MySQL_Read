@@ -1,0 +1,29 @@
+/*
+Php script to connect to Mysql and history of the opening relay ,  granting access.
+*/
+
+
+<html><body>
+<?php
+
+ $link =  mysql_connect("localhost", "Test","13061997") or
+ die(mysql_errno($link).mysql_error($link));
+mysql_select_db ("test", $link) or
+ die(mysql_errno($link).mysql_error($link));
+ $rezult = mysql_query("SELECT * FROM history",$link) or
+ die(mysql_errno($link).mysql_error($link)); 
+ echo "<table border=3 width=100% bordercolor=#8B7E66 bgcolor=#E8E8E8>";
+ $th=explode("#","UID#Прізвище#Ім'я#По батькові#Час і дата");
+ echo "<tr><th>";
+ echo implode("</th><th>",$th);
+ echo "</th><tr>";
+ while($data=mysql_fetch_row($rezult)) {
+	 echo"<tr><td>";
+	 echo implode("</td><td>",$data);
+	 echo "</td></tr>";
+ }
+ mysql_free_result($rezult);
+ mysql_close($link);
+ echo"</table>";
+ ?>
+</body></html>	
