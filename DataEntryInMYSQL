@@ -1,0 +1,47 @@
+/*
+Php main.php script that connects to the Mysql will record the history and the presence of a code in the table gives the signal by which the relay opens.
+*/
+
+
+<?php 
+$html=file_get_contents('http://192.168.1.120'); 
+$rest = substr($html, 25, 8);
+
+
+$date = date('H-i-s | j-m-Y');
+//echo $date;
+
+//echo $rest;
+$db = mysql_connect("localhost", "login","password");
+mysql_select_db ("test", $db);
+
+$sql = mysql_query("SELECT Surname,Name,Lastname FROM codes WHERE UID = '$rest'",$db) or 
+		die("Error SQL PROBLEM");
+if ($myrow = mysql_fetch_array($sql)){	
+$html=file_get_contents('http://192.168.1.120/$1'); 
+echo "<br>";
+ $Hello = "Hello";
+ $a= "Hello ".$myrow["Name"];
+ echo $a;
+ 
+$sql = mysql_query("INSERT INTO history (UID, Surname,Name,Lastname,Time) 
+                     VALUES('" 
+					 . $rest . "','"
+					 . $myrow['Surname'] ."','"
+					 . $myrow['Name'] . "','" 
+					 . $myrow['Lastname'] . "','" 
+					 .$date . "')",$db);
+
+					 
+	echo "<br>" . mysql_error();
+}
+else{
+	echo "<br>";
+	echo "no";
+}
+ unset($myrow);
+ mysql_close($db);
+
+	
+?>
+            
